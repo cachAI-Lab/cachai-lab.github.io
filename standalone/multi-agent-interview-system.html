@@ -1201,6 +1201,16 @@
                         ${currentAgent.name} es ${currentAgent.occupation || 'trabajador'} de ${currentAgent.age || 'edad no especificada'} años, 
                         residente en ${currentAgent.location || 'ubicación no especificada'}.
                     </p>
+                    ${currentAgent.occupation ? `
+                        <p style="color: #555; line-height: 1.5; font-size: 12px; margin-bottom: 10px;">
+                            <strong>Ocupación:</strong> ${currentAgent.occupation}
+                        </p>
+                    ` : ''}
+                    ${currentAgent.ethnicity ? `
+                        <p style="color: #555; line-height: 1.5; font-size: 12px; margin-bottom: 10px;">
+                            <strong>Origen étnico:</strong> ${currentAgent.ethnicity}
+                        </p>
+                    ` : ''}
                     ${currentAgent.political_leaning ? `
                         <p style="color: #555; line-height: 1.5; font-size: 12px; margin-bottom: 10px;">
                             <strong>Posición política:</strong> ${currentAgent.political_leaning}
