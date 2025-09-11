@@ -984,7 +984,7 @@
         });
         
         // API Key Management
-        function saveApiKey() {
+    function saveApiKey() {
             const input = document.getElementById('apiKeyInput');
             const apiKey = input.value.trim();
             const errorEl = document.getElementById('apiKeyError');
@@ -999,16 +999,18 @@
             
             document.getElementById('apiKeyOverlay').classList.add('hidden');
             errorEl.style.display = 'none';
-        }
+    }
+    window.saveApiKey = saveApiKey;
         
-        function changeApiKey() {
+    function changeApiKey() {
             document.getElementById('apiKeyInput').value = '';
             document.getElementById('apiKeyOverlay').classList.remove('hidden');
             document.getElementById('apiKeyInput').focus();
-        }
+    }
+    window.changeApiKey = changeApiKey;
         
         // Load agents from JSON file
-        function loadAgentsFromFile(event) {
+    function loadAgentsFromFile(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
 
@@ -1061,7 +1063,8 @@
                 };
                 reader.readAsText(file);
             }
-        }
+    }
+    window.loadAgentsFromFile = loadAgentsFromFile;
         
         // Validate and normalize agent structure
         function validateAgentStructure(agent) {
@@ -1201,16 +1204,6 @@
                         ${currentAgent.name} es ${currentAgent.occupation || 'trabajador'} de ${currentAgent.age || 'edad no especificada'} años, 
                         residente en ${currentAgent.location || 'ubicación no especificada'}.
                     </p>
-                    ${currentAgent.occupation ? `
-                        <p style="color: #555; line-height: 1.5; font-size: 12px; margin-bottom: 10px;">
-                            <strong>Ocupación:</strong> ${currentAgent.occupation}
-                        </p>
-                    ` : ''}
-                    ${currentAgent.ethnicity ? `
-                        <p style="color: #555; line-height: 1.5; font-size: 12px; margin-bottom: 10px;">
-                            <strong>Origen étnico:</strong> ${currentAgent.ethnicity}
-                        </p>
-                    ` : ''}
                     ${currentAgent.political_leaning ? `
                         <p style="color: #555; line-height: 1.5; font-size: 12px; margin-bottom: 10px;">
                             <strong>Posición política:</strong> ${currentAgent.political_leaning}
@@ -1790,7 +1783,7 @@
                         model: 'gpt-4o-mini',
                         messages: [
                             { role: 'system', content: agent.system_prompt },
-                            ...agent.interview_data.slice(-4),
+                            ...agent.interview_data.slice(-400),
                             { role: 'user', content: prompt }
                         ],
                         temperature: 0.7,
@@ -1918,8 +1911,10 @@
         
         function displayComparisonResults(responses) {
             const grid = document.getElementById('comparisonGrid');
-            
-            grid.innerHTML = responses.map(({ agent, response }) => `
+            // Guardar resultados en variable global para exportar
+            window.lastComparisonResults = responses;
+
+            let html = responses.map(({ agent, response }) => `
                 <div class="comparison-agent">
                     <h4>${agent.name}</h4>
                     <div style="font-size: 10px; color: #7f8c8d; margin-bottom: 5px;">
@@ -1930,7 +1925,62 @@
                     </div>
                 </div>
             `).join('');
+
+            html += `
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; grid-column: 1/-1;">
+                    <button onclick="exportComparisonResultsCSV()" style="padding: 6px 12px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        📥 Exportar Comparación CSV
+                    </button>
+                </div>
+            `;
+            grid.innerHTML = html;
         }
+
+        // Exportar resultados de comparación a CSV
+    function exportComparisonResultsCSV() {
+            if (!window.lastComparisonResults || window.lastComparisonResults.length === 0) {
+                showNotification('⚠️ No hay resultados de comparación para exportar', 'warning');
+                return;
+            }
+            const header = [
+                'timestamp',
+                'agent_id',
+                'agent_name',
+                'agent_age',
+                'agent_location',
+                'response'
+            ];
+            const rows = [header];
+            const timestamp = new Date().toISOString();
+            for (const { agent, response } of window.lastComparisonResults) {
+                rows.push([
+                    timestamp,
+                    agent.id || '',
+                    agent.name || '',
+                    agent.age != null ? agent.age : '',
+                    agent.location || '',
+                    response || ''
+                ]);
+            }
+            const csv = rows.map(cols =>
+                cols.map(v => {
+                    const s = String(v).replace(/"/g, '""');
+                    return `"${s}"`;
+                }).join(',')
+            ).join('\r\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const fileName = `comparacion_multiagente_${Date.now()}.csv`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Resultados de comparación exportados como CSV');
+    }
+    window.exportComparisonResultsCSV = exportComparisonResultsCSV;
         
         // Tab switching
         function switchTab(tabName) {
